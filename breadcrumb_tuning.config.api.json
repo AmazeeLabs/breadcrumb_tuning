@@ -1,0 +1,70 @@
+// Comments are not allowed in JSON ;)
+{
+  "config": {
+    // Should contain only one of the children described below.
+    "main-menu": {
+      // Example: "menu-main-menu".
+      "menu-name": "{menu machine name}",
+      // Use for menu-per-domain system (Sigvaris, Vetrotech).
+      // Example: "main_menu_container".
+      "mini-panel": "{mini panel machine name}"
+    },
+    // If the last item of the initial breadcrumbs is a link, the current page
+    // title will be appended to the breadcrumbs.
+    // Works only for standard breadcrumbs.
+    // Optional. Defaults to "false".
+    "append-current-title": "{true|false}",
+    // Optional. Defaults to "true",
+    "exclude-admin-paths": "{true|false}"
+  },
+  // The first match rule wil be used.
+  "rules": [
+    {
+      "admin-title": "{rule admin title}",
+      // Should contain only one of the children described below.
+      "condition": {
+        // Examples: "node/221", "productsearch".
+        "path": "{internal path}",
+        // Examples: "node", "node-product".
+        // If this condition is chosen, entity tockens will be available for the
+        // rule. Otherwise, only global tokens will be available.
+        "entity-bundle": "{entity|entity-bundle}"
+      },
+      "actions": {
+        // Optional. Be sure that this path exists in the main menu.
+        // Supports tokens.
+        "set-active-trail-path": "{internal path}",
+        // Optional.
+        "set-breadcrumbs": {
+          "breadcrumbs": [
+            {
+              // Supports tokens.
+              "path": "{internal path}",
+              // Could contain one or all of the children described below. The first
+              // non empty value will be used.
+              "title": {
+                // Detects title from the router item.
+                "router-item": "true",
+                // Detects title from the main menu item.
+                "main-menu-item": "true",
+                // Custom title that goes through the t() function.
+                // Supports tokens.
+                "custom": "{custom title}"
+              }
+            }
+            // more breadcrumbs...
+          ],
+          // Should contain only one of the children described below.
+          "method": {
+            "override": "true",
+            "append": "true",
+            "insert": {
+              "position": "{position number}"
+            }
+          }
+        }
+      }
+    }
+    // more rules...
+  ]
+}

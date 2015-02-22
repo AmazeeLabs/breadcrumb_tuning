@@ -1,0 +1,66 @@
+{
+  "config": {
+    "main-menu": {
+      "mini-panel": "main_menu_container"
+    },
+    "append-current-title": "true"
+  },
+  "rules": [
+    {
+      "admin-title": "Product nodes",
+      "condition": {
+        "entity-bundle": "node-product"
+      },
+      "actions": {
+        "set-active-trail-path": "[node:product-line-search-path]",
+        "set-breadcrumbs": {
+          "breadcrumbs": [
+            {
+              "path": "node/21",
+              "title": {
+                "main-menu-item": "true",
+                "router-item": "true"
+              }
+            },
+            {
+              "path": "[node:product-line-search-path]",
+              "title": {
+                "custom": "[node:field-product-line]"
+              }
+            }
+          ],
+          "method": {
+            "insert": {
+              "position": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "admin-title": "Productsearch",
+      "condition": {
+        "path": "productsearch"
+      },
+      "actions": {
+        "set-active-trail-path": "node/21",
+        "set-breadcrumbs": {
+          "breadcrumbs": [
+            {
+              "path": "node/21",
+              "title": {
+                "main-menu-item": "true",
+                "router-item": "true"
+              }
+            }
+          ],
+          "method": {
+            "insert": {
+              "position": 1
+            }
+          }
+        }
+      }
+    }
+  ]
+}

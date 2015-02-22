@@ -1,0 +1,306 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function breadcrumb_tuning_menu() {
+  $items = array();
+
+  $items['admin/config/search/breadcrumb_tuning'] = array(
+    'title' => 'Breadcrumb tuning',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('breadcrumb_tuning_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'breadcrumb_tuning.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_init().
+ */
+function breadcrumb_tuning_init() {
+  _breadcrumb_tuning_get();
+}
+
+/**
+ * Implements hook_menu_breadcrumb_alter().
+ */
+function breadcrumb_tuning_menu_breadcrumb_alter(&$active_trail, $item) {
+  list($rule, $breadcrumbs) = _breadcrumb_tuning_get();
+  if (!empty($breadcrumbs)) {
+    $data = reset($rule['actions']['set-breadcrumbs']['method']);
+    $method = key($rule['actions']['set-breadcrumbs']['method']);
+    switch ($method) {
+      case 'override':
+        $active_trail = $breadcrumbs;
+        break;
+      case 'append':
+        $active_trail = array_merge($active_trail, $breadcrumbs);
+        break;
+      case 'insert':
+        array_splice($active_trail, $data['position'], 0, $breadcrumbs);
+        break;
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_breadcrumb().
+ */
+function breadcrumb_tuning_preprocess_breadcrumb(&$variables) {
+  list(, , $config) = _breadcrumb_tuning_get();
+  if ($config && $config['config']['append-current-title'] == 'true' && !empty($variables['breadcrumb'])) {
+    $last_breadcrumb = end($variables['breadcrumb']);
+    if (strpos($last_breadcrumb, '<a') === 0) {
+      $title = drupal_get_title();
+      if (!empty($title)) {
+        $variables['breadcrumb'][] = $title;
+      }
+    }
+  }
+}
+
+/**
+ * The hart of the module.
+ *
+ * On the first call: detects current main menu, searches for a matching rule,
+ * sets active trail, calculates breadcrumbs, caches all data statically.
+ * On the further calls: only returns cached data.
+ *
+ * @return array
+ *   An indexed array:
+ *   - 0: matched rule
+ *   - 1: an indexed array of calculated breadcrumbs
+ *   - 2: the whole module configuration array
+ *   Any or all of the items could be NULL.
+ */
+function _breadcrumb_tuning_get() {
+  $cache =& drupal_static(__FUNCTION__);
+  if (isset($cache)) {
+    return $cache;
+  }
+  $cache = array(NULL, NULL, NULL);
+  $config = drupal_json_decode(variable_get('breadcrumb_tuning_config'));
+  if (empty($config)) {
+    return $cache;
+  }
+  $config['config'] += array(
+    'exclude-admin-paths' => 'true',
+    'append-current-title' => 'false',
+  );
+  $current_path = current_path();
+  if ($config['config']['exclude-admin-paths'] == 'true' && path_is_admin($current_path)) {
+    return $cache;
+  }
+  $cache[2] = $config;
+  if (!empty($config['rules'])) {
+
+    $main_menu_name = NULL;
+    if (isset($config['config']['main-menu']['menu-name'])) {
+      $main_menu_name = $config['config']['main-menu']['menu-name'];
+    }
+    if (!isset($main_menu_name)) {
+      $mini = panels_mini_load($config['config']['main-menu']['mini-panel']);
+      if ($mini) {
+        ctools_include('plugins', 'panels');
+        /** @var panels_display $display */
+        $display = $mini->display;
+        foreach ($display->content as $pane) {
+          if (strpos($pane->subtype, 'superfish-') === 0) {
+            if (panels_pane_access($pane, $display)) {
+              list(, $superfish_id) = explode('-', $pane->subtype);
+              list($main_menu_name) = explode(':', variable_get('superfish_menu_' . $superfish_id));
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    $found = FALSE;
+    foreach ($config['rules'] as $rule) {
+      $value = reset($rule['condition']);
+      $condition = key($rule['condition']);
+      switch ($condition) {
+        case 'path':
+          $path = $value;
+          if ($path == $current_path) {
+            $found = TRUE;
+            break 2;
+          }
+          else {
+            $menu_item = menu_get_item($path);
+            $current_menu_item = menu_get_item($current_path);
+            if ($menu_item && $current_menu_item && $menu_item['path'] == $current_menu_item['path']) {
+              $found = TRUE;
+              break 2;
+            }
+          }
+          break;
+        case 'entity-bundle':
+          @list($entity_type, $target_bundle) = explode('-', $value);
+          $position = ($entity_type == 'taxonomy_term') ? 2 : 1;
+          if ($entity = menu_get_object($entity_type, $position)) {
+            if (isset($target_bundle)) {
+              try {
+                list(, , $bundle) = entity_extract_ids($entity_type, $entity);
+                if ($bundle == $target_bundle) {
+                  $rule['entity_type'] = $entity_type;
+                  $rule['entity'] = $entity;
+                  $found = TRUE;
+                  break 2;
+                }
+              }
+              catch (Exception $e) {}
+            }
+            else {
+              $rule['entity_type'] = $entity_type;
+              $rule['entity'] = $entity;
+              $found = TRUE;
+              break 2;
+            }
+          }
+          break;
+      }
+    }
+    if ($found) {
+      _breadcrumb_tuning_debug('found matching rule', $rule);
+      $cache[0] = $rule;
+
+      $token_data = isset($rule['entity']) ? array($rule['entity_type'] => $rule['entity']) : array();
+      $token_options = array('sanitize' => FALSE, 'clear' => TRUE);
+
+      if (!empty($rule['actions']['set-active-trail-path'])) {
+        $path = trim(token_replace($rule['actions']['set-active-trail-path'], $token_data, $token_options));
+        if ($path != $rule['actions']['set-active-trail-path']) {
+          _breadcrumb_tuning_debug('active trail path token replacement', array(
+            'before' => $rule['actions']['set-active-trail-path'],
+            'after' => $path,
+            'token data' => $token_data,
+            'token options' => $token_options
+          ));
+        }
+        if ($path !== '') {
+          menu_tree_set_path($main_menu_name, $path);
+          _breadcrumb_tuning_ensure_preferred_link($path, $main_menu_name);
+        }
+      }
+
+      $breadcrumbs = array();
+      if (!empty($rule['actions']['set-breadcrumbs']['breadcrumbs'])) {
+        foreach ($rule['actions']['set-breadcrumbs']['breadcrumbs'] as $breadcrumb_definition) {
+          $path = trim(token_replace($breadcrumb_definition['path'], $token_data, $token_options));
+          if ($path != $breadcrumb_definition['path']) {
+            _breadcrumb_tuning_debug('breadcrumb path token replacement', array(
+              'before' => $breadcrumb_definition['path'],
+              'after' => $path,
+              'token data' => $token_data,
+              'token options' => $token_options
+            ));
+          }
+          if ($path !== '') {
+            $found = FALSE;
+            foreach ($breadcrumb_definition['title'] as $method => $value) {
+              switch ($method) {
+                case 'router-item':
+                  $menu_item = menu_get_item($path);
+                  if (isset($menu_item['title']) && $menu_item['title'] !== '') {
+                    $found = TRUE;
+                    $title = $menu_item['title'];
+                    break 2;
+                  }
+                  break;
+                case 'main-menu-item':
+                  $preferred_link = menu_link_get_preferred($path, $main_menu_name);
+                  if (isset($preferred_link['title']) && $preferred_link['title'] !== '') {
+                    $found = TRUE;
+                    $title = $preferred_link['title'];
+                    break 2;
+                  }
+                  break;
+                case 'custom':
+                  $title = trim(token_replace($value, $token_data, $token_options));
+                  if ($title != $value) {
+                    _breadcrumb_tuning_debug('breadcrumb title token replacement', array(
+                      'before' => $value,
+                      'after' => $title,
+                      'token data' => $token_data,
+                      'token options' => $token_options
+                    ));
+                  }
+                  if ($title !== '') {
+                    $found = TRUE;
+                    break 2;
+                  }
+                  break;
+              }
+            }
+            if ($found) {
+              $breadcrumbs[] = array(
+                'title' => $title,
+                'href' => $path,
+                'localized_options' => array(),
+              );
+            }
+          }
+        }
+      }
+      $cache[1] = $breadcrumbs;
+    }
+  }
+  return $cache;
+}
+
+/**
+ * Fixes menu_link_get_preferred() behavior.
+ *
+ * The menu_link_get_preferred() function is suppose to return a matching menu
+ * item for a router path. In most cases it works good, but not for the facet
+ * search paths. The think is that it searches menu_links table not for a given
+ * path, but for the path of its router item. So, if we have the
+ * "productsearch/product_line/sigvaris-medical" link in the menu, the
+ * menu_link_get_preferred() function will search for the "productsearch", not
+ * for the originally given path.
+ * We fix this by pre-populating the function's static cache.
+ *
+ * @param string $path
+ * @param string $menu_name
+ *
+ * @see menu_link_get_preferred()
+ */
+function _breadcrumb_tuning_ensure_preferred_link($path, $menu_name) {
+  if (menu_link_get_preferred($path, $menu_name)) {
+    return;
+  }
+  $menu_link_id = db_select('menu_links', 'ml')
+    ->condition('ml.link_path', $path)
+    ->condition('ml.menu_name', $menu_name)
+    ->fields('ml', array('mlid'))
+    ->execute()
+    ->fetchField();
+  if ($menu_link_id) {
+    $link = menu_link_load($menu_link_id);
+    // The link returned by the menu_link_get_preferred() is a bit different, it
+    // has the "title" property. Just copy it from the "link_title".
+    $link['title'] = $link['link_title'];
+    $preferred_links =& drupal_static('menu_link_get_preferred');
+    $preferred_links[$path][$menu_name] = $link;
+  }
+}
+
+/**
+ * Prints debug message with dpm().
+ *
+ * @param string $message
+ *   The message.
+ * @param mixed $object
+ *   Anything to be printed with dpm().
+ */
+function _breadcrumb_tuning_debug($message, $object) {
+  if (variable_get('breadcrumb_tuning_debug') && function_exists('dpm')) {
+    dpm($object, t('Breadcrumb tuning debug: @message. <small>You can disable the debug mode <a href="@url">here</a>.</small>', array('@message' => $message, '@url' => url('admin/config/search/breadcrumb_tuning'))));
+  }
+}

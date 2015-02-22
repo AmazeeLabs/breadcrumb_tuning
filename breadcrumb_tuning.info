@@ -1,0 +1,5 @@
+name = Breadcrumb tuning
+description = Provides advanced breadcrumb options.
+core = 7.x
+
+configure = admin/config/search/breadcrumb_tuning
