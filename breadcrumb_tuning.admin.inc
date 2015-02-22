@@ -26,6 +26,11 @@ While there is no normal UI, you can use !link for a better editing experience.'
     '#description' => t('The debug mode uses dpm() function. So, to see the debug messages, you need to have the Devel module enabled and the user account should have "Access developer information" permission.'),
     '#default_value' => variable_get('breadcrumb_tuning_debug'),
   );
+  $form['clear_menu_cache'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Clear menu cache.'),
+    '#description' => t('Menu active trails are cached per page. If you added/changed/deleted the set-active-trail-path action, you should clear menu cache.'),
+  );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
@@ -69,4 +74,8 @@ function breadcrumb_tuning_admin_form_validate(&$form, &$form_state) {
 function breadcrumb_tuning_admin_form_submit(&$form, &$form_state) {
   variable_set('breadcrumb_tuning_config', $form_state['values']['config']);
   variable_set('breadcrumb_tuning_debug', $form_state['values']['debug']);
+  drupal_set_message(t('The configuration options have been saved.'));
+  if (!empty($form_state['values']['clear_menu_cache'])) {
+    menu_cache_clear_all();
+  }
 }
