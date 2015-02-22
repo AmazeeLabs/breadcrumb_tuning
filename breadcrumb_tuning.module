@@ -131,7 +131,7 @@ function _breadcrumb_tuning_get() {
             $found = TRUE;
             break 2;
           }
-          else {
+          elseif (strpos($current_path, $path . '/') === 0) {
             $menu_item = menu_get_item($path);
             $current_menu_item = menu_get_item($current_path);
             if ($menu_item && $current_menu_item && $menu_item['path'] == $current_menu_item['path']) {
