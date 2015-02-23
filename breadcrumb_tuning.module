@@ -186,6 +186,7 @@ function _breadcrumb_tuning_get() {
         if ($path !== '') {
           menu_tree_set_path($main_menu_name, $path);
           _breadcrumb_tuning_ensure_preferred_link($path, $main_menu_name);
+          _breadcrumb_tuning_check_active_trail_cache($current_path, $main_menu_name);
         }
       }
 
@@ -288,6 +289,34 @@ function _breadcrumb_tuning_ensure_preferred_link($path, $menu_name) {
     $link['title'] = $link['link_title'];
     $preferred_links =& drupal_static('menu_link_get_preferred');
     $preferred_links[$path][$menu_name] = $link;
+  }
+}
+
+/**
+ * Helps menu_tree_page_data() work nicely.
+ *
+ * Example.
+ * The productsearch path uses facet pretty paths, so it can be:
+ *   - productsearch/product_line/medical
+ *   - productsearch/product_line/well-being
+ * For some of these paths we want to set active trails. But the menu data that
+ * includes active trail information is cached by the $menu_item['href'], which
+ * is identical for all these paths.
+ * To avoid this, we clears that cache.
+ * Testing on a local machine (with no APC and Xdebug enabled) says that if we
+ * clear the cache, the menu_tree_page_data() needs only 1-2 milliseconds.
+ * Furthermore, we clear cache only for main menu.
+ *
+ * @param string $path
+ * @param string $menu_name
+ *
+ * @see menu_tree_page_data()
+ */
+function _breadcrumb_tuning_check_active_trail_cache($path, $menu_name) {
+  $menu_item = menu_get_item($path);
+  if (substr_count($menu_item['href'], '/') != substr_count($path, '/')) {
+    $cid = 'links:' . $menu_name . ':page:' . $menu_item['href'] . ':' . $GLOBALS['language']->language . ':' . (int) $menu_item['access'] . ':0';
+    cache_clear_all($cid, 'cache_menu');
   }
 }
 
