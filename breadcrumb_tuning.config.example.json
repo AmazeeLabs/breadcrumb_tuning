@@ -18,14 +18,85 @@
             {
               "path": "node/21",
               "title": {
-                "main-menu-item": "true",
-                "router-item": "true"
+                "custom": "Products"
               }
             },
             {
               "path": "[node:product-line-search-path]",
               "title": {
                 "custom": "[node:field-product-line]"
+              }
+            }
+          ],
+          "method": {
+            "insert": {
+              "position": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "admin-title": "Productsearch MEDICAL",
+      "condition": {
+        "path": "productsearch/product_line/sigvaris-medical"
+      },
+      "actions": {
+        "set-active-trail-path": "productsearch/product_line/sigvaris-medical",
+        "set-breadcrumbs": {
+          "breadcrumbs": [
+            {
+              "path": "node/21",
+              "title": {
+                "custom": "Products"
+              }
+            }
+          ],
+          "method": {
+            "insert": {
+              "position": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "admin-title": "Productsearch WELL BEING",
+      "condition": {
+        "path": "productsearch/product_line/sigvaris-well-being"
+      },
+      "actions": {
+        "set-active-trail-path": "productsearch/product_line/sigvaris-well-being",
+        "set-breadcrumbs": {
+          "breadcrumbs": [
+            {
+              "path": "node/21",
+              "title": {
+                "custom": "Products"
+              }
+            }
+          ],
+          "method": {
+            "insert": {
+              "position": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "admin-title": "Productsearch SPORTS",
+      "condition": {
+        "path": "productsearch/product_line/sigvaris-sports"
+      },
+      "actions": {
+        "set-active-trail-path": "productsearch/product_line/sigvaris-sports",
+        "set-breadcrumbs": {
+          "breadcrumbs": [
+            {
+              "path": "node/21",
+              "title": {
+                "custom": "Products"
               }
             }
           ],
@@ -49,8 +120,7 @@
             {
               "path": "node/21",
               "title": {
-                "main-menu-item": "true",
-                "router-item": "true"
+                "custom": "Products"
               }
             }
           ],

@@ -83,7 +83,11 @@ function _breadcrumb_tuning_get() {
     return $cache;
   }
   $cache = array(NULL, NULL, NULL);
-  $config = drupal_json_decode(variable_get('breadcrumb_tuning_config'));
+  if (drupal_is_cli() || (($_SERVER['REQUEST_METHOD'] != 'GET') && (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) != 'xmlhttprequest'))) {
+    // Only proceed on a normal GET requests or AJAX requests.
+    return $cache;
+  }
+  $config = variable_get('breadcrumb_tuning_config');
   if (empty($config)) {
     return $cache;
   }
@@ -233,6 +237,7 @@ function _breadcrumb_tuning_get() {
                     ));
                   }
                   if ($title !== '') {
+                    $title = t($title);
                     $found = TRUE;
                     break 2;
                   }

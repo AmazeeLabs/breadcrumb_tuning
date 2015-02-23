@@ -43,13 +43,15 @@
               // Could contain one or all of the children described below. The first
               // non empty value will be used.
               "title": {
+                // Custom title that goes through the t() function.
+                // This is a preferred way to set the breadcrumb title, since
+                // other methods may slow down the performance.
+                // Supports tokens.
+                "custom": "{custom title}",
                 // Detects title from the router item.
                 "router-item": "true",
                 // Detects title from the main menu item.
-                "main-menu-item": "true",
-                // Custom title that goes through the t() function.
-                // Supports tokens.
-                "custom": "{custom title}"
+                "main-menu-item": "true"
               }
             }
             // more breadcrumbs...

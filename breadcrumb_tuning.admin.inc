@@ -4,17 +4,14 @@
  * Configuration form callback.
  */
 function breadcrumb_tuning_admin_form($form, &$form_state) {
-  $config = variable_get('breadcrumb_tuning_config');
-  $module_path = drupal_get_path('module', 'breadcrumb_tuning');
-
   $form['warning']['#markup'] = t('WARNING: only JSON syntax is validated automatically! The config structure is not validated! Be careful. Use API ans Example.<br />
-While there is no normal UI, you can use !link for a better editing experience.', array('!link' => l('jsoneditoronline.org', 'https://www.jsoneditoronline.org/?json=' . rawurlencode($config), array('attributes' => array('target'=>'_blank')))));
+While there is no normal UI, you can use !link for a better editing experience.', array('!link' => l('jsoneditoronline.org', 'https://www.jsoneditoronline.org/?json=%7B%7D', array('attributes' => array('target'=>'_blank')))));
 
   $form['config'] = array(
     '#type' => 'textarea',
     '#title' => t('Config'),
     '#description' => t('Use JSON to describe the module configuration. See the API and Example sections for help.'),
-    '#default_value' => $config,
+    '#default_value' => variable_get('breadcrumb_tuning_config_json'),
     '#attributes' => array(
       'style' => 'font-family: monospace;',
     ),
@@ -36,6 +33,7 @@ While there is no normal UI, you can use !link for a better editing experience.'
     '#value' => t('Save'),
   );
 
+  $module_path = drupal_get_path('module', 'breadcrumb_tuning');
   $form['api'] = array(
     '#type' => 'fieldset',
     '#title' => t('API'),
@@ -72,7 +70,8 @@ function breadcrumb_tuning_admin_form_validate(&$form, &$form_state) {
  * Submit handler for the configuration form.
  */
 function breadcrumb_tuning_admin_form_submit(&$form, &$form_state) {
-  variable_set('breadcrumb_tuning_config', $form_state['values']['config']);
+  variable_set('breadcrumb_tuning_config', drupal_json_decode($form_state['values']['config']));
+  variable_set('breadcrumb_tuning_config_json', $form_state['values']['config']);
   variable_set('breadcrumb_tuning_debug', $form_state['values']['debug']);
   drupal_set_message(t('The configuration options have been saved.'));
   if (!empty($form_state['values']['clear_menu_cache'])) {
