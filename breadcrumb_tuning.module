@@ -6,12 +6,20 @@
 function breadcrumb_tuning_menu() {
   $items = array();
 
-  $items['admin/config/search/breadcrumb_tuning'] = array(
+  if (module_exists('crumbs')) {
+    $path = 'admin/structure/crumbs/breadcrumb-tuning';
+    $type = MENU_LOCAL_TASK;
+  }
+  else {
+    $path = 'admin/structure/breadcrumb-tuning';
+    $type = MENU_NORMAL_ITEM;
+  }
+  $items[$path] = array(
     'title' => 'Breadcrumb tuning',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('breadcrumb_tuning_admin_form'),
     'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM,
+    'type' => $type,
     'file' => 'breadcrumb_tuning.admin.inc',
   );
 
@@ -23,6 +31,15 @@ function breadcrumb_tuning_menu() {
  */
 function breadcrumb_tuning_init() {
   _breadcrumb_tuning_get();
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function breadcrumb_tuning_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && !empty($plugin)) {
+    return "plugins/$plugin";
+  }
 }
 
 /**
