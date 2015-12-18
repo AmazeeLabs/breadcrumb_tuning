@@ -8,7 +8,7 @@ After installing, see the `admin/config/search/breadcrumb_tuning` path for confi
 
 ## How it works
 
-TBD
+It uses hooks and hacks :) The most important function is `_breadcrumb_tuning_get()`.
 
 ## <a name="pane"></a> The "Breadcrumbs tuned (with fallback to Crumbs)" pane
 
