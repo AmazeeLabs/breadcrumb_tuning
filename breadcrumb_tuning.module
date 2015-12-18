@@ -81,7 +81,7 @@ function breadcrumb_tuning_preprocess_breadcrumb(&$variables) {
 }
 
 /**
- * The hart of the module.
+ * The heart of the module.
  *
  * On the first call: detects current main menu, searches for a matching rule,
  * sets active trail, calculates breadcrumbs, caches all data statically.
