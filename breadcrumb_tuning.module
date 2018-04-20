@@ -50,6 +50,7 @@ function breadcrumb_tuning_menu_breadcrumb_alter(&$active_trail, $item) {
   if (!empty($breadcrumbs)) {
     $data = reset($rule['actions']['set-breadcrumbs']['method']);
     $method = key($rule['actions']['set-breadcrumbs']['method']);
+
     switch ($method) {
       case 'override':
         $active_trail = $breadcrumbs;
@@ -58,7 +59,7 @@ function breadcrumb_tuning_menu_breadcrumb_alter(&$active_trail, $item) {
         $active_trail = array_merge($active_trail, $breadcrumbs);
         break;
       case 'insert':
-        array_splice($active_trail, $data['position'], 0, $breadcrumbs);
+        array_splice($active_trail, $data['position'], count($active_trail), $breadcrumbs);
         break;
     }
   }
